@@ -1,26 +1,23 @@
+import { Link } from 'react-router-dom'
 import LogoMeta from '../assets/logo-meta.png'
 
-type NavbarProps = {
-  navigate: (path: string) => void
-}
-
-export function Navbar({ navigate }: NavbarProps) {
+export function Navbar() {
   return (
-    <header className="w-full bg-maingreen flex flex-row items-center px-4 py-2 text-white justify-between">
+    <header className="w-full gradient-background flex flex-row items-center px-4 py-2 text-white justify-between">
       <img src={LogoMeta} alt="Logo Meta Centro Esportivo" className="h-14" />
 
       <div className="flex flex-row gap-6">
-      <button className="navbar-button" onClick={() => navigate('/home')}>
+        <Link className="navbar-button" to="/">
           Home
-        </button>
-        <button className="navbar-button" onClick={() => navigate('/agendamentos')}>
+        </Link>
+
+        <Link className="navbar-button" to="/agendamentos">
           Agendamentos
-        </button>
+        </Link>
 
-        <button className="navbar-button" onClick={() => navigate('/perfil')}>
+        <Link className="navbar-button" to="/perfil">
           Perfil
-        </button>
-
+        </Link>
       </div>
     </header>
   )

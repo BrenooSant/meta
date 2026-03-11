@@ -1,11 +1,11 @@
-export function CalendarIcon() {
+export function Beachtennis() {
   return <span aria-hidden="true">📅</span>
 }
 
-export function ProfileIcon() {
+export function Futvolei() {
   return <span aria-hidden="true">💪</span>
 }
 
-export function MoneyIcon() {
+export function volei() {
   return <span aria-hidden="true">💵</span>
 }
