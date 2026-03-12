@@ -1,7 +1,7 @@
 import { Pencil } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
-import { getProfile } from '../lib/services/profile'
+
 
 type Profile = {
   full_name: string
@@ -102,15 +102,30 @@ export function Profile() {
   const [showModal, setShowModal] = useState(false)
 
   function loadProfile() {
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user || user.is_anonymous === false && !user.id) {
-        setLoggedIn(false)
-        return
-      }
-      setLoggedIn(true)
-      getProfile().then(setProfile).catch(console.error)
-    })
-  }
+  supabase.auth.getUser().then(async ({ data: { user } }) => {
+    if (!user) {
+      setLoggedIn(false)
+      return
+    }
+
+    // Checa se o perfil existe na tabela
+    const { data: profileData, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+
+    if (error || !profileData) {
+      // Sessão existe mas perfil foi deletado — desloga e volta pro cadastro
+      await supabase.auth.signOut()
+      setLoggedIn(false)
+      return
+    }
+
+    setLoggedIn(true)
+    setProfile(profileData)
+  })
+}
 
   useEffect(() => {
     loadProfile()
