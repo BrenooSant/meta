@@ -57,43 +57,43 @@ function AuthModal({ onSuccess }: { onSuccess: () => void }) {
   }
 
   // Passo 2 — cadastra novo usuário
-  async function handleRegister() {
-    if (!fullName) {
-      setError('Digite seu nome.')
-      return
-    }
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const fakeEmail = getFakeEmail(phone)
-      const fakePassword = `quadra_${phone.replace(/\D/g, '')}`
-
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email: fakeEmail,
-        password: fakePassword,
-        options: { emailRedirectTo: undefined },
-      })
-
-      if (signUpError) throw signUpError
-
-      const user = data.user
-      if (!user) throw new Error('Erro ao criar conta.')
-
-      const { error: profileError } = await supabase
-        .from('users')
-        .insert({ id: user.id, fullname: fullName, phone })
-
-      if (profileError) throw profileError
-
-      onSuccess()
-    } catch (err: any) {
-      setError(err.message ?? 'Erro ao cadastrar.')
-    } finally {
-      setLoading(false)
-    }
+ async function handleRegister() {
+  if (!fullName) {
+    setError('Digite seu nome.')
+    return
   }
+
+  setLoading(true)
+  setError(null)
+
+  try {
+    const fakeEmail = getFakeEmail(phone)
+    const fakePassword = `quadra_${phone.replace(/\D/g, '')}`
+
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: fakeEmail,
+      password: fakePassword,
+      options: {
+        emailRedirectTo: undefined,
+        data: {               // <- passa os dados aqui
+          fullname: fullName,
+          phone: phone,
+        }
+      },
+    })
+
+    if (signUpError) throw signUpError
+    if (!data.user) throw new Error('Erro ao criar conta.')
+
+    // Insert manual removido — o trigger cuida disso agora
+
+    onSuccess()
+  } catch (err: any) {
+    setError(err.message ?? 'Erro ao cadastrar.')
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50">

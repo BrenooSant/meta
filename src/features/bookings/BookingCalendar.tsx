@@ -91,8 +91,16 @@ if (!isOpen) return null
   if (!name.trim() || !phone.trim()) return
   setLoading(true)
 
+  function getFakeEmail(rawPhone: string) {
+    const digits = rawPhone.replace(/\D/g, '')
+    return `${digits}@quadra.app`
+  }
+
   try {
-    // 1. Busca se já existe pelo telefone
+    const fakeEmail = getFakeEmail(phone)
+    const fakePassword = `quadra_${phone.replace(/\D/g, '')}`
+
+    // 1. Verifica se já existe pelo telefone
     const { data: existingUser } = await supabase
       .from('users')
       .select('id')
@@ -100,7 +108,13 @@ if (!isOpen) return null
       .maybeSingle()
 
     if (existingUser) {
-      // Usuário já existe — só atualiza o nome se mudou e confirma
+      // Usuário existe — faz login e confirma
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: fakeEmail,
+        password: fakePassword,
+      })
+      if (signInError) throw signInError
+
       await supabase
         .from('users')
         .update({ fullname: name.trim() })
@@ -110,45 +124,25 @@ if (!isOpen) return null
       return
     }
 
-    // 2. Usuário novo — cria sessão anônima
-    let { data: { user } } = await supabase.auth.getUser()
+    // 2. Usuário novo — cria conta
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email: fakeEmail,
+      password: fakePassword,
+      options: {
+        emailRedirectTo: undefined,
+        data: {
+          fullname: name.trim(),
+          phone: phone.trim(),
+        }
+      },
+    })
 
-    if (!user) {
-      const { data, error } = await supabase.auth.signInAnonymously()
-      if (error) throw error
-      user = data.user
-    }
+    if (signUpError) throw signUpError
+    if (!data.user) throw new Error('Erro ao criar conta.')
 
-    if (!user) throw new Error('Erro ao obter sessão.')
-
-    // 3. Verifica se esse id Auth já tem registro (evita duplicar sessão)
-    const { data: existingById } = await supabase
-      .from('users')
-      .select('id')
-      .eq('id', user.id)
-      .maybeSingle()
-
-    if (existingById) {
-      // Sessão Auth já tem usuário — atualiza dados e confirma
-      await supabase
-        .from('users')
-        .update({ fullname: name.trim(), phone: phone.trim() })
-        .eq('id', user.id)
-
-      await onConfirm()
-      return
-    }
-
-    // 4. Insere novo usuário
-    const { error: insertError } = await supabase
-      .from('users')
-      .insert({
-        id: user.id,
-        fullname: name.trim(),
-        phone: phone.trim(),
-      })
-
-    if (insertError) throw insertError
+    // 3. O trigger cuida do insert em public.users automaticamente
+    // Mas aguarda um momento para o trigger executar
+    await new Promise(resolve => setTimeout(resolve, 500))
 
     await onConfirm()
 
